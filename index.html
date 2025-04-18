@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coffee Recipe Randomizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Apply Inter font globally */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+        }
+        /* Simple transition for button hover */
+        button {
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+        }
+        button:active {
+            transform: scale(0.98); /* Slight scale down on click */
+        }
+        /* Style for the generated recipe card */
+        #recipeOutput div {
+            background-color: #ffffff; /* White background for recipe items */
+            padding: 0.75rem; /* p-3 */
+            border-radius: 0.5rem; /* rounded-lg */
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); /* shadow-md */
+            margin-bottom: 0.5rem; /* mb-2 */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+         /* Style for coffee list items */
+        #coffeeList li {
+            background-color: #e5e7eb; /* Slightly darker gray for list items */
+            padding: 0.5rem 0.75rem; /* py-2 px-3 */
+            border-radius: 0.375rem; /* rounded-md */
+            margin-bottom: 0.5rem; /* mb-2 */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        /* Style for remove buttons */
+        .remove-btn {
+            background-color: #ef4444; /* red-500 */
+            color: white;
+            padding: 0.25rem 0.5rem; /* py-1 px-2 */
+            border-radius: 0.375rem; /* rounded-md */
+            font-size: 0.75rem; /* text-xs */
+            border: none;
+            cursor: pointer;
+        }
+        .remove-btn:hover {
+            background-color: #dc2626; /* red-600 */
+        }
+        /* Simple animation for recipe display */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-2xl mx-auto bg-white p-6 rounded-xl shadow-lg">
+
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">☕ Coffee Recipe Randomizer 🎲</h1>
+
+        <div class="mb-8 p-4 border border-gray-200 rounded-lg bg-gray-50">
+            <h2 class="text-xl font-semibold text-gray-700 mb-3">Manage Your Coffee Beans</h2>
+            <div class="flex gap-2 mb-4">
+                <input type="text" id="coffeeInput" placeholder="Enter coffee name (e.g., Ethiopia Yirgacheffe)" class="flex-grow p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button id="addCoffeeBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md">Add Coffee</button>
+            </div>
+            <h3 class="text-lg font-medium text-gray-600 mb-2">Your Coffees:</h3>
+            <ul id="coffeeList" class="max-h-40 overflow-y-auto">
+                <li class="text-gray-500 italic">No coffees added yet.</li>
+            </ul>
+        </div>
+
+        <div class="text-center mb-6">
+            <button id="randomizeBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg shadow-md">
+                Roll the Dice!
+            </button>
+        </div>
+
+        <div id="recipeOutputContainer" class="p-4 border border-gray-200 rounded-lg bg-gray-50 min-h-[200px]">
+             <h2 class="text-xl font-semibold text-gray-700 mb-3 text-center">Your Randomized Recipe</h2>
+            <div id="recipeOutput" class="space-y-3">
+                 <p class="text-center text-gray-500 italic mt-4">Click "Roll the Dice!" to generate a recipe.</p>
+                </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const coffeeInput = document.getElementById('coffeeInput');
+        const addCoffeeBtn = document.getElementById('addCoffeeBtn');
+        const coffeeListEl = document.getElementById('coffeeList');
+        const randomizeBtn = document.getElementById('randomizeBtn');
+        const recipeOutputEl = document.getElementById('recipeOutput');
+        const recipeOutputContainer = document.getElementById('recipeOutputContainer'); // Container for animation
+
+        // --- State ---
+        let coffees = []; // Array to hold coffee names
+
+        // --- Constants ---
+        const BREWERS = ['Hario Switch', 'Hario V60', 'Hario Mugen'];
+        const MIN_DOSE_G = 15;
+        const MAX_DOSE_G = 25;
+        const MIN_RATIO = 15; // Water per gram of coffee (e.g., 1:15)
+        const MAX_RATIO = 18; // Water per gram of coffee (e.g., 1:18)
+        const MIN_BLOOM_S = 30;
+        const MAX_BLOOM_S = 120;
+        const MIN_POURS = 1;
+        const MAX_POURS = 5;
+
+        // --- Utility Functions ---
+        /**
+         * Generates a random integer between min (inclusive) and max (inclusive).
+         * @param {number} min - The minimum value.
+         * @param {number} max - The maximum value.
+         * @returns {number} A random integer.
+         */
+        function getRandomInt(min, max) {
+            min = Math.ceil(min);
+            max = Math.floor(max);
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        /**
+         * Generates a random element from an array.
+         * @param {Array} arr - The array to pick from.
+         * @returns {*} A random element from the array.
+         */
+        function getRandomElement(arr) {
+            if (!arr || arr.length === 0) return null;
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        // --- Coffee List Management ---
+        /**
+         * Loads coffees from localStorage.
+         */
+        function loadCoffees() {
+            const storedCoffees = localStorage.getItem('coffeeList');
+            if (storedCoffees) {
+                coffees = JSON.parse(storedCoffees);
+            }
+            renderCoffeeList();
+        }
+
+        /**
+         * Saves coffees to localStorage.
+         */
+        function saveCoffees() {
+            localStorage.setItem('coffeeList', JSON.stringify(coffees));
+        }
+
+        /**
+         * Renders the coffee list in the UI.
+         */
+        function renderCoffeeList() {
+            coffeeListEl.innerHTML = ''; // Clear existing list
+            if (coffees.length === 0) {
+                 coffeeListEl.innerHTML = '<li class="text-gray-500 italic">No coffees added yet.</li>';
+                 return;
+            }
+            coffees.forEach((coffee, index) => {
+                const li = document.createElement('li');
+                li.className = 'flex justify-between items-center bg-gray-200 p-2 rounded mb-1'; // Added basic styling
+
+                const span = document.createElement('span');
+                span.textContent = coffee;
+                li.appendChild(span);
+
+                const removeBtn = document.createElement('button');
+                removeBtn.textContent = 'Remove';
+                removeBtn.className = 'remove-btn'; // Use class for styling
+                removeBtn.onclick = () => removeCoffee(index);
+                li.appendChild(removeBtn);
+
+                coffeeListEl.appendChild(li);
+            });
+        }
+
+        /**
+         * Adds a new coffee to the list.
+         */
+        function addCoffee() {
+            const coffeeName = coffeeInput.value.trim();
+            if (coffeeName) {
+                if (!coffees.includes(coffeeName)) { // Prevent duplicates
+                    coffees.push(coffeeName);
+                    saveCoffees();
+                    renderCoffeeList();
+                    coffeeInput.value = ''; // Clear input
+                } else {
+                    // Optional: Add user feedback for duplicate entry
+                    console.warn("Coffee already exists in the list.");
+                    // You could show a temporary message to the user here
+                }
+            }
+        }
+
+         /**
+         * Removes a coffee from the list by index.
+         * @param {number} index - The index of the coffee to remove.
+         */
+        function removeCoffee(index) {
+            coffees.splice(index, 1); // Remove coffee at the specified index
+            saveCoffees();
+            renderCoffeeList();
+        }
+
+        // --- Randomization Logic ---
+        /**
+         * Generates a random coffee recipe.
+         */
+        function generateRandomRecipe() {
+            // Add fade-in class to container for animation trigger
+            recipeOutputContainer.classList.remove('fade-in');
+            // void recipeOutputContainer.offsetWidth; // Trigger reflow to restart animation
+            recipeOutputContainer.classList.add('fade-in');
+
+
+            const selectedCoffee = getRandomElement(coffees) || "Any Coffee"; // Default if list is empty
+            const brewer = getRandomElement(BREWERS);
+            const dose = getRandomInt(MIN_DOSE_G, MAX_DOSE_G);
+            const ratio = getRandomInt(MIN_RATIO, MAX_RATIO);
+            const water = dose * ratio;
+            const bloomTime = getRandomInt(MIN_BLOOM_S, MAX_BLOOM_S);
+            const pours = getRandomInt(MIN_POURS, MAX_POURS);
+
+            // Display the recipe
+            recipeOutputEl.innerHTML = `
+                <div class="fade-in"><span class="font-medium text-gray-600">Coffee:</span> <span class="font-semibold text-gray-900">${selectedCoffee}</span></div>
+                <div class="fade-in" style="animation-delay: 0.1s;"><span class="font-medium text-gray-600">Brewer:</span> <span class="font-semibold text-gray-900">${brewer}</span></div>
+                <div class="fade-in" style="animation-delay: 0.2s;"><span class="font-medium text-gray-600">Dose:</span> <span class="font-semibold text-gray-900">${dose}g</span></div>
+                <div class="fade-in" style="animation-delay: 0.3s;"><span class="font-medium text-gray-600">Water:</span> <span class="font-semibold text-gray-900">~${water}g (Ratio ~1:${ratio})</span></div>
+                <div class="fade-in" style="animation-delay: 0.4s;"><span class="font-medium text-gray-600">Bloom:</span> <span class="font-semibold text-gray-900">${bloomTime} seconds</span></div>
+                <div class="fade-in" style="animation-delay: 0.5s;"><span class="font-medium text-gray-600">Pours:</span> <span class="font-semibold text-gray-900">${pours} (after bloom)</span></div>
+            `;
+        }
+
+        // --- Event Listeners ---
+        addCoffeeBtn.addEventListener('click', addCoffee);
+        // Allow adding coffee by pressing Enter in the input field
+        coffeeInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                addCoffee();
+            }
+        });
+        randomizeBtn.addEventListener('click', generateRandomRecipe);
+
+        // --- Initial Load ---
+        loadCoffees(); // Load coffees when the page loads
+
+    </script>
+</body>
+</html>
