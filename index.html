@@ -316,29 +316,37 @@
          */
         function generateRandomRecipe() {
             currentRecipeCoffee = null;
-            currentRecipeDose = null;
+            currentRecipeDose = null; // Reset dose state initially
             doneBtn.classList.add('hidden');
 
             recipeOutputContainer.classList.remove('fade-in');
             void recipeOutputContainer.offsetWidth;
             recipeOutputContainer.classList.add('fade-in');
 
-            // --- Select Coffee ---
-            const availableCoffees = coffees.filter(coffee => coffee.weight > 0);
+            // --- Generate Dose FIRST ---
+            const dose = getRandomInt(MIN_DOSE_G, MAX_DOSE_G);
+
+            // --- Select Coffee (Must have enough weight for the dose) ---
+            // Filter coffees that have enough weight for the generated dose
+            const availableCoffees = coffees.filter(coffee => coffee.weight >= dose);
             let selectedCoffeeObject = null;
-            let selectedCoffeeName = "Any Coffee";
+            let selectedCoffeeName = "Any Coffee"; // Default
+
             if (availableCoffees.length > 0) {
+                 // Select randomly from the suitable coffees
                  selectedCoffeeObject = getRandomElement(availableCoffees);
                  selectedCoffeeName = selectedCoffeeObject.name;
-                 currentRecipeCoffee = selectedCoffeeObject;
+                 currentRecipeCoffee = selectedCoffeeObject; // Store the selected coffee object
+                 currentRecipeDose = dose; // Store the dose only if a suitable coffee is found
             } else if (coffees.length > 0) {
-                selectedCoffeeName = "Any Coffee (All out of stock!)";
-            }
+                // Coffees exist, but none have enough for this dose
+                selectedCoffeeName = `Any Coffee (None have ≥ ${dose}g)`;
+            } // If coffees array is empty, sticks to "Any Coffee"
 
-            // --- Generate Base Parameters ---
+
+            // --- Generate Remaining Parameters ---
             const method = getRandomElement(METHODS);
             const grindSize = getRandomElement(GRIND_SIZES);
-            const dose = getRandomInt(MIN_DOSE_G, MAX_DOSE_G);
             const ratio = getRandomInt(MIN_RATIO, MAX_RATIO);
             let water = dose * ratio;
             water = Math.round(water / WATER_ROUNDING_FACTOR) * WATER_ROUNDING_FACTOR;
@@ -349,6 +357,7 @@
             const bloomWater = Math.round(dose * ESTIMATED_BLOOM_RATIO);
 
             // --- Build Recipe HTML Header ---
+            // Display the selected coffee name (which might indicate none suitable)
             let recipeHTML = `
                 <div class="fade-in bg-gray-600 p-3 rounded-lg shadow flex justify-between items-center mb-2">
                     <span class="font-medium text-gray-300">Coffee:</span>
@@ -413,7 +422,7 @@
                     }
 
                 } else if (immersionScenario === 'All Closed') {
-                     scenarioTitle = 'All Closed'; // Removed (Max Limit)
+                     scenarioTitle = 'All Closed';
                      let actualClosedPours = 0;
                      let cumulativeClosedWater = (bloomSwitchState === 'Closed' ? bloomWater : 0);
                      for (let i = 1; i <= totalPours; i++) {
@@ -434,7 +443,6 @@
                      }
 
                      if (openPours > 0) {
-                         // Removed (due to limit)
                          instructionListHTML += `<li>${openPours > 1 ? 'Remaining ' : ''}${openPours} pour${openPours > 1 ? 's' : ''} (~${openPoursWater}g total): Switch Open</li>`;
                      }
 
@@ -490,8 +498,9 @@
             recipeOutputEl.innerHTML = recipeHTML;
 
             // --- Handle "Done" Button State ---
+            // Enable button only if a suitable coffee was actually found and selected
             if (currentRecipeCoffee) {
-                 currentRecipeDose = dose;
+                 // currentRecipeDose was already set when coffee was selected
                  doneBtn.classList.remove('hidden');
                  doneBtn.disabled = false;
             } else {
@@ -500,12 +509,29 @@
         }
 
         // --- Mark Recipe as Done Logic ---
-        function markRecipeDone() { /* ... (no changes) ... */
-               if (!currentRecipeCoffee || currentRecipeDose === null) { console.error("No valid recipe data."); return; }
+        function markRecipeDone() {
+               // Check currentRecipeCoffee and currentRecipeDose before proceeding
+               if (!currentRecipeCoffee || currentRecipeDose === null) {
+                   console.error("Cannot mark recipe as done: No valid coffee/dose selected.");
+                   alert("Cannot mark recipe as done. Please generate a recipe with an available coffee first.");
+                   return;
+               }
 
             const coffeeIndex = coffees.findIndex(c => c.name === currentRecipeCoffee.name);
             if (coffeeIndex !== -1) {
                 const coffeeToUpdate = coffees[coffeeIndex];
+                // Double check weight just in case, though selection logic should prevent this
+                if (coffeeToUpdate.weight < currentRecipeDose) {
+                     console.error(`Error: Coffee "${coffeeToUpdate.name}" has insufficient weight (${coffeeToUpdate.weight}g) for dose (${currentRecipeDose}g).`);
+                     alert(`Error: Coffee "${coffeeToUpdate.name}" has insufficient weight. Please check the list.`);
+                     // Reset button state without changing weight
+                     doneBtn.disabled = true;
+                     doneBtn.classList.add('hidden');
+                     currentRecipeCoffee = null;
+                     currentRecipeDose = null;
+                     return;
+                }
+
                 const newWeight = Math.max(0, coffeeToUpdate.weight - currentRecipeDose);
                 coffeeToUpdate.weight = newWeight;
                 console.log(`Updated ${coffeeToUpdate.name} weight to ${newWeight}g.`);
@@ -521,6 +547,7 @@
                 alert("Error: Could not find the selected coffee to update its weight.");
             }
 
+            // Reset state after attempting update
             doneBtn.disabled = true;
             doneBtn.classList.add('hidden');
             currentRecipeCoffee = null;
