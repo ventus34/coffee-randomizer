@@ -12,48 +12,26 @@
         /* Apply Inter font globally */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6; /* Light gray background */
         }
         /* Simple transition for button hover */
         button {
-            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out, opacity 0.2s ease-in-out;
         }
         button:active {
-            transform: scale(0.98); /* Slight scale down on click */
+            transform: scale(0.98);
         }
-        /* Style for the generated recipe card */
-        #recipeOutput div {
-            background-color: #ffffff; /* White background for recipe items */
-            padding: 0.75rem; /* p-3 */
-            border-radius: 0.5rem; /* rounded-lg */
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); /* shadow-md */
-            margin-bottom: 0.5rem; /* mb-2 */
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
-         /* Style for coffee list items */
-        #coffeeList li {
-            background-color: #e5e7eb; /* Slightly darker gray for list items */
-            padding: 0.5rem 0.75rem; /* py-2 px-3 */
-            border-radius: 0.375rem; /* rounded-md */
-            margin-bottom: 0.5rem; /* mb-2 */
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+        /* Style for 0g coffee - adjusted for dark theme */
+         #coffeeList li.out-of-stock span:first-child {
+            text-decoration: line-through;
+            color: #6b7280; /* gray-500 */
+         }
         /* Style for remove buttons */
         .remove-btn {
-            background-color: #ef4444; /* red-500 */
-            color: white;
-            padding: 0.25rem 0.5rem; /* py-1 px-2 */
-            border-radius: 0.375rem; /* rounded-md */
-            font-size: 0.75rem; /* text-xs */
-            border: none;
-            cursor: pointer;
-        }
-        .remove-btn:hover {
-            background-color: #dc2626; /* red-600 */
+             /* Tailwind classes used directly */
         }
         /* Simple animation for recipe display */
         @keyframes fadeIn {
@@ -63,200 +41,502 @@
         .fade-in {
             animation: fadeIn 0.5s ease-out forwards;
         }
+        /* Hide the actual file input */
+        #importFile {
+            display: none;
+        }
+        /* Improve number input appearance in dark mode */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+           -webkit-appearance: none;
+           margin: 0;
+        }
+        input[type=number] {
+           -moz-appearance: textfield; /* Firefox */
+        }
+        /* Style for multi-line instruction text */
+        .instruction-block {
+             background-color: #4b5563; /* gray-600 slightly darker */
+             padding: 0.75rem; /* p-3 */
+             border-radius: 0.375rem; /* rounded-md */
+        }
+        .instruction-block ul {
+            list-style-type: disc;
+            padding-left: 1.5rem; /* Indent list */
+        }
+         .instruction-block li {
+            margin-bottom: 0.25rem; /* space between steps */
+         }
+         /* Style for single-line note */
+         .note-block {
+             background-color: #4b5563; /* gray-600 slightly darker */
+             padding: 0.5rem 0.75rem; /* p-2 px-3 */
+             border-radius: 0.375rem; /* rounded-md */
+             font-size: 0.875rem; /* text-sm */
+             text-align: center;
+         }
+
     </style>
 </head>
-<body class="p-4 md:p-8">
-    <div class="max-w-2xl mx-auto bg-white p-6 rounded-xl shadow-lg">
+<body class="p-4 md:p-8 bg-gray-900 text-gray-200">
+    <div class="max-w-2xl mx-auto bg-gray-800 p-6 rounded-xl shadow-xl shadow-gray-950/50">
 
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">☕ Coffee Recipe Randomizer 🎲</h1>
+        <h1 class="text-3xl font-bold text-center text-gray-100 mb-6">Coffee Recipe Randomizer</h1>
 
-        <div class="mb-8 p-4 border border-gray-200 rounded-lg bg-gray-50">
-            <h2 class="text-xl font-semibold text-gray-700 mb-3">Manage Your Coffee Beans</h2>
-            <div class="flex gap-2 mb-4">
-                <input type="text" id="coffeeInput" placeholder="Enter coffee name (e.g., Ethiopia Yirgacheffe)" class="flex-grow p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <button id="addCoffeeBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md">Add Coffee</button>
+        <div class="mb-8 p-4 border border-gray-700 rounded-lg bg-gray-700">
+            <h2 class="text-xl font-semibold text-gray-100 mb-3">Manage Your Coffee Beans</h2>
+            <div class="flex flex-col sm:flex-row gap-2 mb-4">
+                <input
+                    type="text"
+                    id="coffeeNameInput"
+                    placeholder="Coffee Name"
+                    class="flex-grow p-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-600 text-gray-100 placeholder-gray-400">
+                <input
+                    type="number"
+                    id="coffeeWeightInput"
+                    placeholder="Weight (g)"
+                    min="0" step="1"
+                    class="w-full sm:w-28 p-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-600 text-gray-100 placeholder-gray-400">
+                <button id="addCoffeeBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md sm:w-auto w-full">Add Coffee</button>
             </div>
-            <h3 class="text-lg font-medium text-gray-600 mb-2">Your Coffees:</h3>
-            <ul id="coffeeList" class="max-h-40 overflow-y-auto">
-                <li class="text-gray-500 italic">No coffees added yet.</li>
+            <h3 class="text-lg font-medium text-gray-300 mb-2">Your Coffees:</h3>
+            <ul id="coffeeList" class="max-h-48 overflow-y-auto mb-4">
+                 <li class="text-gray-400 italic">No coffees added yet.</li>
             </ul>
+            <div class="flex gap-2 justify-start mt-4">
+                 <button id="exportBtn" class="bg-gray-600 hover:bg-gray-500 text-white font-medium py-2 px-4 rounded-md text-sm">Export List (JSON)</button>
+                 <button id="importBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-md text-sm">Import List (JSON)</button>
+                 <input type="file" id="importFile" accept=".json">
+            </div>
         </div>
 
         <div class="text-center mb-6">
-            <button id="randomizeBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg shadow-md">
+            <button id="randomizeBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg text-lg shadow-md">
                 Roll the Dice!
             </button>
         </div>
 
-        <div id="recipeOutputContainer" class="p-4 border border-gray-200 rounded-lg bg-gray-50 min-h-[200px]">
-             <h2 class="text-xl font-semibold text-gray-700 mb-3 text-center">Your Randomized Recipe</h2>
-            <div id="recipeOutput" class="space-y-3">
-                 <p class="text-center text-gray-500 italic mt-4">Click "Roll the Dice!" to generate a recipe.</p>
-                </div>
+        <div id="recipeOutputContainer" class="p-4 border border-gray-700 rounded-lg bg-gray-700 min-h-[340px] flex flex-col">
+             <h2 class="text-xl font-semibold text-gray-100 mb-3 text-center">Your Randomized Recipe</h2>
+            <div id="recipeOutput" class="space-y-3 flex-grow">
+                 <p class="text-center text-gray-400 italic mt-4">Click "Roll the Dice!" to generate a recipe.</p>
+            </div>
+            <div class="text-center mt-4">
+                <button id="doneBtn" class="bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-5 rounded-md hidden">
+                    Mark as Brewed & Update Weight
+                </button>
+            </div>
         </div>
 
     </div>
 
     <script>
         // --- DOM Elements ---
-        const coffeeInput = document.getElementById('coffeeInput');
+        const coffeeNameInput = document.getElementById('coffeeNameInput');
+        const coffeeWeightInput = document.getElementById('coffeeWeightInput');
         const addCoffeeBtn = document.getElementById('addCoffeeBtn');
         const coffeeListEl = document.getElementById('coffeeList');
         const randomizeBtn = document.getElementById('randomizeBtn');
         const recipeOutputEl = document.getElementById('recipeOutput');
-        const recipeOutputContainer = document.getElementById('recipeOutputContainer'); // Container for animation
+        const recipeOutputContainer = document.getElementById('recipeOutputContainer');
+        const exportBtn = document.getElementById('exportBtn');
+        const importBtn = document.getElementById('importBtn');
+        const importFileEl = document.getElementById('importFile');
+        const doneBtn = document.getElementById('doneBtn');
+
 
         // --- State ---
-        let coffees = []; // Array to hold coffee names
+        let coffees = []; // Array to hold coffee objects: { name: string, weight: number }
+        let currentRecipeCoffee = null; // Holds the object of the coffee used in the current recipe
+        let currentRecipeDose = null; // Holds the dose used in the current recipe
 
         // --- Constants ---
-        const BREWERS = ['Hario Switch', 'Hario V60', 'Hario Mugen'];
+        const METHODS = ['Percolation', 'Immersion'];
+        const GRIND_SIZES = ['Extra Coarse', 'Coarse', 'Medium-Coarse', 'Medium', 'Medium-Fine', 'Fine', 'Extra Fine'];
         const MIN_DOSE_G = 15;
-        const MAX_DOSE_G = 25;
-        const MIN_RATIO = 15; // Water per gram of coffee (e.g., 1:15)
-        const MAX_RATIO = 18; // Water per gram of coffee (e.g., 1:18)
+        const MAX_DOSE_G = 24; // Updated
+        const MIN_RATIO = 14; // Updated
+        const MAX_RATIO = 20; // Updated
         const MIN_BLOOM_S = 30;
         const MAX_BLOOM_S = 120;
-        const MIN_POURS = 1;
-        const MAX_POURS = 5;
+        const BLOOM_STEP_S = 15;
+        const MIN_POURS = 1; // Min pours after bloom
+        const MAX_POURS_PERCOLATION = 5; // Max pours for Percolation
+        const MAX_POURS_IMMERSION = 2; // Updated Max pours for Immersion
+        const WATER_ROUNDING_FACTOR = 10;
+        const ESTIMATED_BLOOM_RATIO = 2.5; // For calculations
+        const IMMERSION_CLOSED_LIMIT_G = 300; // Approx. limit for Hario Switch closed
+        const IMMERSION_SCENARIOS = ['All Open', 'All Closed', 'Split']; // Simplified scenarios
 
         // --- Utility Functions ---
-        /**
-         * Generates a random integer between min (inclusive) and max (inclusive).
-         * @param {number} min - The minimum value.
-         * @param {number} max - The maximum value.
-         * @returns {number} A random integer.
-         */
         function getRandomInt(min, max) {
             min = Math.ceil(min);
             max = Math.floor(max);
+            if (max < min) {
+                max = min;
+            }
             return Math.floor(Math.random() * (max - min + 1)) + min;
         }
-
-        /**
-         * Generates a random element from an array.
-         * @param {Array} arr - The array to pick from.
-         * @returns {*} A random element from the array.
-         */
         function getRandomElement(arr) {
             if (!arr || arr.length === 0) return null;
             return arr[Math.floor(Math.random() * arr.length)];
         }
 
         // --- Coffee List Management ---
-        /**
-         * Loads coffees from localStorage.
-         */
-        function loadCoffees() {
-            const storedCoffees = localStorage.getItem('coffeeList');
+        function loadCoffees() { /* ... (no changes) ... */
+             const storedCoffees = localStorage.getItem('coffeeList');
             if (storedCoffees) {
-                coffees = JSON.parse(storedCoffees);
+                try {
+                    const parsedCoffees = JSON.parse(storedCoffees);
+                    if (Array.isArray(parsedCoffees) &&
+                        parsedCoffees.every(item => typeof item === 'object' && item !== null &&
+                                                 typeof item.name === 'string' && typeof item.weight === 'number' &&
+                                                 !isNaN(item.weight) && item.weight >= 0)) {
+                        coffees = parsedCoffees;
+                    } else {
+                        console.warn("Invalid data format in localStorage for coffeeList. Clearing invalid data.");
+                        localStorage.removeItem('coffeeList');
+                        coffees = [];
+                    }
+                } catch (error) {
+                    console.error("Error parsing coffee list from localStorage:", error);
+                    localStorage.removeItem('coffeeList');
+                    coffees = [];
+                }
+            } else {
+                 coffees = [];
             }
             renderCoffeeList();
         }
-
-        /**
-         * Saves coffees to localStorage.
-         */
-        function saveCoffees() {
-            localStorage.setItem('coffeeList', JSON.stringify(coffees));
+        function saveCoffees() { /* ... (no changes) ... */
+             localStorage.setItem('coffeeList', JSON.stringify(coffees));
         }
-
-        /**
-         * Renders the coffee list in the UI.
-         */
-        function renderCoffeeList() {
-            coffeeListEl.innerHTML = ''; // Clear existing list
+        function renderCoffeeList() { /* ... (no changes) ... */
+              coffeeListEl.innerHTML = '';
             if (coffees.length === 0) {
-                 coffeeListEl.innerHTML = '<li class="text-gray-500 italic">No coffees added yet.</li>';
+                 coffeeListEl.innerHTML = '<li class="text-gray-400 italic">No coffees added yet.</li>';
                  return;
             }
             coffees.forEach((coffee, index) => {
                 const li = document.createElement('li');
-                li.className = 'flex justify-between items-center bg-gray-200 p-2 rounded mb-1'; // Added basic styling
-
-                const span = document.createElement('span');
-                span.textContent = coffee;
-                li.appendChild(span);
-
+                li.className = 'flex justify-between items-center bg-gray-600 p-2 rounded-md mb-2';
+                if (coffee.weight <= 0) {
+                    li.classList.add('out-of-stock');
+                }
+                const textSpan = document.createElement('span');
+                textSpan.textContent = `${coffee.name} (${coffee.weight}g)`;
+                textSpan.className = 'mr-2 truncate';
+                li.appendChild(textSpan);
                 const removeBtn = document.createElement('button');
                 removeBtn.textContent = 'Remove';
-                removeBtn.className = 'remove-btn'; // Use class for styling
+                removeBtn.className = 'remove-btn bg-red-600 hover:bg-red-700 text-white text-xs font-medium py-1 px-2 rounded-md flex-shrink-0 ml-2';
                 removeBtn.onclick = () => removeCoffee(index);
                 li.appendChild(removeBtn);
-
                 coffeeListEl.appendChild(li);
             });
         }
+        function addCoffee() { /* ... (no changes) ... */
+              const coffeeName = coffeeNameInput.value.trim();
+            const weightValue = coffeeWeightInput.value.trim();
+            const initialWeight = parseFloat(weightValue);
 
-        /**
-         * Adds a new coffee to the list.
-         */
-        function addCoffee() {
-            const coffeeName = coffeeInput.value.trim();
-            if (coffeeName) {
-                if (!coffees.includes(coffeeName)) { // Prevent duplicates
-                    coffees.push(coffeeName);
-                    saveCoffees();
-                    renderCoffeeList();
-                    coffeeInput.value = ''; // Clear input
-                } else {
-                    // Optional: Add user feedback for duplicate entry
-                    console.warn("Coffee already exists in the list.");
-                    // You could show a temporary message to the user here
-                }
-            }
+            if (!coffeeName) { alert("Please enter a coffee name."); return; }
+            if (weightValue === '' || isNaN(initialWeight) || initialWeight < 0) { alert("Please enter a valid non-negative weight in grams."); return; }
+            if (coffees.some(coffee => coffee.name.toLowerCase() === coffeeName.toLowerCase())) { alert(`"${coffeeName}" is already in the list.`); return; }
+
+            coffees.push({ name: coffeeName, weight: initialWeight });
+            saveCoffees();
+            renderCoffeeList();
+            coffeeNameInput.value = '';
+            coffeeWeightInput.value = '';
         }
-
-         /**
-         * Removes a coffee from the list by index.
-         * @param {number} index - The index of the coffee to remove.
-         */
-        function removeCoffee(index) {
-            coffees.splice(index, 1); // Remove coffee at the specified index
+        function removeCoffee(index) { /* ... (no changes) ... */
+             coffees.splice(index, 1);
             saveCoffees();
             renderCoffeeList();
         }
 
+        // --- Import/Export Logic ---
+        function exportCoffees() { /* ... (no changes) ... */
+               if (coffees.length === 0) { alert("Coffee list is empty. Nothing to export."); return; }
+            const jsonString = JSON.stringify(coffees, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'coffee_list.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        function handleImport(event) { /* ... (no changes) ... */
+               const file = event.target.files[0];
+            if (!file) return;
+            if (file.type !== 'application/json') { alert('Invalid file type. Please select a JSON file.'); importFileEl.value = ''; return; }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (Array.isArray(importedData) &&
+                        importedData.every(item => typeof item === 'object' && item !== null &&
+                                                 typeof item.name === 'string' && item.name.trim() !== '' &&
+                                                 typeof item.weight === 'number' && !isNaN(item.weight) && item.weight >= 0)) {
+                        const uniqueImportedData = [];
+                        const seenNames = new Set();
+                        for (const item of importedData) {
+                            if (!seenNames.has(item.name.toLowerCase())) {
+                                uniqueImportedData.push(item);
+                                seenNames.add(item.name.toLowerCase());
+                            }
+                        }
+                        coffees = uniqueImportedData;
+                        saveCoffees();
+                        renderCoffeeList();
+                        alert(`Successfully imported ${coffees.length} coffee(s)!`);
+                    } else {
+                        alert('Invalid JSON format. The file should contain a list of objects, each with a "name" (string) and "weight" (non-negative number).');
+                    }
+                } catch (error) {
+                    console.error("Error parsing imported JSON file:", error);
+                    alert('Error reading or parsing the JSON file. Please ensure it is valid.');
+                } finally {
+                     importFileEl.value = '';
+                }
+            };
+            reader.onerror = function() { alert('Error reading the file.'); importFileEl.value = ''; };
+            reader.readAsText(file);
+        }
+
+
         // --- Randomization Logic ---
         /**
-         * Generates a random coffee recipe.
+         * Generates a random coffee recipe based on Method.
          */
         function generateRandomRecipe() {
-            // Add fade-in class to container for animation trigger
+            currentRecipeCoffee = null;
+            currentRecipeDose = null;
+            doneBtn.classList.add('hidden');
+
             recipeOutputContainer.classList.remove('fade-in');
-            // void recipeOutputContainer.offsetWidth; // Trigger reflow to restart animation
+            void recipeOutputContainer.offsetWidth;
             recipeOutputContainer.classList.add('fade-in');
 
+            // --- Select Coffee ---
+            const availableCoffees = coffees.filter(coffee => coffee.weight > 0);
+            let selectedCoffeeObject = null;
+            let selectedCoffeeName = "Any Coffee";
+            if (availableCoffees.length > 0) {
+                 selectedCoffeeObject = getRandomElement(availableCoffees);
+                 selectedCoffeeName = selectedCoffeeObject.name;
+                 currentRecipeCoffee = selectedCoffeeObject;
+            } else if (coffees.length > 0) {
+                selectedCoffeeName = "Any Coffee (All out of stock!)";
+            }
 
-            const selectedCoffee = getRandomElement(coffees) || "Any Coffee"; // Default if list is empty
-            const brewer = getRandomElement(BREWERS);
+            // --- Generate Base Parameters ---
+            const method = getRandomElement(METHODS);
+            const grindSize = getRandomElement(GRIND_SIZES);
             const dose = getRandomInt(MIN_DOSE_G, MAX_DOSE_G);
             const ratio = getRandomInt(MIN_RATIO, MAX_RATIO);
-            const water = dose * ratio;
-            const bloomTime = getRandomInt(MIN_BLOOM_S, MAX_BLOOM_S);
-            const pours = getRandomInt(MIN_POURS, MAX_POURS);
+            let water = dose * ratio;
+            water = Math.round(water / WATER_ROUNDING_FACTOR) * WATER_ROUNDING_FACTOR;
+            const minBloomMultiplier = MIN_BLOOM_S / BLOOM_STEP_S;
+            const maxBloomMultiplier = MAX_BLOOM_S / BLOOM_STEP_S;
+            const bloomMultiplier = getRandomInt(minBloomMultiplier, maxBloomMultiplier);
+            const bloomTime = bloomMultiplier * BLOOM_STEP_S;
+            const bloomWater = Math.round(dose * ESTIMATED_BLOOM_RATIO);
 
-            // Display the recipe
-            recipeOutputEl.innerHTML = `
-                <div class="fade-in"><span class="font-medium text-gray-600">Coffee:</span> <span class="font-semibold text-gray-900">${selectedCoffee}</span></div>
-                <div class="fade-in" style="animation-delay: 0.1s;"><span class="font-medium text-gray-600">Brewer:</span> <span class="font-semibold text-gray-900">${brewer}</span></div>
-                <div class="fade-in" style="animation-delay: 0.2s;"><span class="font-medium text-gray-600">Dose:</span> <span class="font-semibold text-gray-900">${dose}g</span></div>
-                <div class="fade-in" style="animation-delay: 0.3s;"><span class="font-medium text-gray-600">Water:</span> <span class="font-semibold text-gray-900">~${water}g (Ratio ~1:${ratio})</span></div>
-                <div class="fade-in" style="animation-delay: 0.4s;"><span class="font-medium text-gray-600">Bloom:</span> <span class="font-semibold text-gray-900">${bloomTime} seconds</span></div>
-                <div class="fade-in" style="animation-delay: 0.5s;"><span class="font-medium text-gray-600">Pours:</span> <span class="font-semibold text-gray-900">${pours} (after bloom)</span></div>
+            // --- Build Recipe HTML Header ---
+            let recipeHTML = `
+                <div class="fade-in bg-gray-600 p-3 rounded-lg shadow flex justify-between items-center mb-2">
+                    <span class="font-medium text-gray-300">Coffee:</span>
+                    <span class="font-semibold text-gray-100">${selectedCoffeeName} ${currentRecipeCoffee ? `(${currentRecipeCoffee.weight}g left)` : ''}</span>
+                </div>
+                <div class="fade-in bg-gray-600 p-3 rounded-lg shadow flex justify-between items-center mb-2" style="animation-delay: 0.1s;">
+                    <span class="font-medium text-gray-300">Method:</span>
+                    <span class="font-semibold text-gray-100">${method}</span>
+                </div>
+                 <div class="fade-in bg-gray-600 p-3 rounded-lg shadow flex justify-between items-center mb-2" style="animation-delay: 0.2s;">
+                    <span class="font-medium text-gray-300">Dose:</span>
+                    <span class="font-semibold text-gray-100">${dose}g</span>
+                </div>
+                <div class="fade-in bg-gray-600 p-3 rounded-lg shadow flex justify-between items-center mb-2" style="animation-delay: 0.3s;">
+                    <span class="font-medium text-gray-300">Water:</span>
+                    <span class="font-semibold text-gray-100">${water}g (Ratio ~1:${(water/dose).toFixed(1)})</span>
+                </div>
+                <div class="fade-in bg-gray-600 p-3 rounded-lg shadow flex justify-between items-center mb-2" style="animation-delay: 0.4s;">
+                    <span class="font-medium text-gray-300">Grind:</span>
+                    <span class="font-semibold text-gray-100">${grindSize}</span>
+                </div>
             `;
+
+            // --- Method-Specific Instructions ---
+             const bloomSwitchState = getRandomElement(['Open', 'Closed']);
+
+            if (method === 'Percolation') {
+                const pours = getRandomInt(MIN_POURS, MAX_POURS_PERCOLATION);
+                recipeHTML += `
+                    <div class="fade-in bg-gray-600 p-3 rounded-lg shadow flex justify-between items-center mb-2" style="animation-delay: 0.5s;">
+                        <span class="font-medium text-gray-300">Bloom:</span>
+                        <span class="font-semibold text-gray-100">${bloomTime}s (Switch ${bloomSwitchState}, ~${bloomWater}g)</span>
+                    </div>
+                    <div class="fade-in bg-gray-600 p-3 rounded-lg shadow flex justify-between items-center mb-2" style="animation-delay: 0.6s;">
+                        <span class="font-medium text-gray-300">Pours:</span>
+                        <span class="font-semibold text-gray-100">${pours}</span>
+                    </div>
+                `;
+                if (bloomSwitchState === 'Closed') {
+                     recipeHTML += `
+                        <div class="fade-in note-block mb-2" style="animation-delay: 0.7s;">
+                             <span class="text-gray-300 italic">Note: After closed bloom, Open Switch for all subsequent pours.</span>
+                        </div>
+                     `;
+                }
+
+            } else { // Immersion - Simplified Pour Logic
+                const immersionScenario = getRandomElement(IMMERSION_SCENARIOS);
+                const waterAfterBloom = Math.max(0, water - bloomWater);
+                const totalPours = getRandomInt(MIN_POURS, MAX_POURS_IMMERSION);
+                const waterPerPour = totalPours > 0 ? waterAfterBloom / totalPours : 0;
+                let instructionListHTML = '';
+
+                instructionListHTML += `<li>Bloom for ${bloomTime}s (Switch ${bloomSwitchState}, ~${bloomWater}g)</li>`;
+
+                let scenarioTitle = '';
+
+                if (immersionScenario === 'All Open') {
+                    scenarioTitle = 'All Open Pours';
+                    if (totalPours > 0) {
+                        instructionListHTML += `<li>${totalPours > 1 ? 'All ' : ''}${totalPours} pour${totalPours > 1 ? 's' : ''} (~${Math.round(waterAfterBloom)}g total): Switch Open</li>`;
+                    }
+
+                } else if (immersionScenario === 'All Closed') {
+                     scenarioTitle = 'All Closed'; // Removed (Max Limit)
+                     let actualClosedPours = 0;
+                     let cumulativeClosedWater = (bloomSwitchState === 'Closed' ? bloomWater : 0);
+                     for (let i = 1; i <= totalPours; i++) {
+                         if ((cumulativeClosedWater + waterPerPour) < IMMERSION_CLOSED_LIMIT_G) {
+                             cumulativeClosedWater += waterPerPour;
+                             actualClosedPours++;
+                         } else { break; }
+                     }
+                     const openPours = totalPours - actualClosedPours;
+                     const closedPoursWater = Math.round(actualClosedPours * waterPerPour);
+                     const openPoursWater = Math.round(openPours * waterPerPour);
+
+                     if (actualClosedPours > 0) {
+                        instructionListHTML += `<li>${actualClosedPours} pour${actualClosedPours > 1 ? 's' : ''} (~${closedPoursWater}g total): Switch Closed</li>`;
+                        instructionListHTML += `<li>Steep for desired time, then Open Switch</li>`;
+                     } else if (bloomSwitchState === 'Closed') {
+                         instructionListHTML += `<li>Steep after bloom, then Open Switch</li>`;
+                     }
+
+                     if (openPours > 0) {
+                         // Removed (due to limit)
+                         instructionListHTML += `<li>${openPours > 1 ? 'Remaining ' : ''}${openPours} pour${openPours > 1 ? 's' : ''} (~${openPoursWater}g total): Switch Open</li>`;
+                     }
+
+                } else { // Split Scenario
+                    scenarioTitle = 'Split Pours (Closed then Open)';
+                    const firstPhaseWaterTarget = waterAfterBloom / 2;
+                    let firstPhaseClosedPours = 0;
+                    let cumulativeClosedWater = (bloomSwitchState === 'Closed' ? bloomWater : 0);
+                    let waterAddedInClosed = 0;
+
+                    for (let i = 1; i <= totalPours; i++) {
+                        if (waterAddedInClosed < firstPhaseWaterTarget && (cumulativeClosedWater + waterPerPour) < IMMERSION_CLOSED_LIMIT_G) {
+                             cumulativeClosedWater += waterPerPour;
+                             waterAddedInClosed += waterPerPour;
+                             firstPhaseClosedPours++;
+                        } else if (firstPhaseClosedPours > 0) {
+                            break;
+                        } else if ((cumulativeClosedWater + waterPerPour) >= IMMERSION_CLOSED_LIMIT_G) {
+                            break;
+                        } else {
+                            if (waterPerPour > 0) break;
+                        }
+                    }
+
+                    const remainingPours = totalPours - firstPhaseClosedPours;
+                    const closedPoursWater = Math.round(waterAddedInClosed);
+                    const openPoursWater = Math.round(waterAfterBloom - waterAddedInClosed);
+
+                    if (firstPhaseClosedPours > 0) {
+                        instructionListHTML += `<li>${firstPhaseClosedPours > 1 ? 'First ' : ''}${firstPhaseClosedPours} pour${firstPhaseClosedPours > 1 ? 's' : ''} (~${closedPoursWater}g total): Switch Closed</li>`;
+                        instructionListHTML += `<li>Steep for desired time, then Open Switch</li>`;
+                    } else if (bloomSwitchState === 'Closed') {
+                         instructionListHTML += `<li>Steep after bloom, then Open Switch</li>`;
+                    }
+
+                    if (remainingPours > 0) {
+                         instructionListHTML += `<li>${remainingPours > 1 ? 'Remaining ' : ''}${remainingPours} pour${remainingPours > 1 ? 's' : ''} (~${Math.max(0, openPoursWater)}g total): Switch Open</li>`;
+                    }
+                }
+
+
+                // Add the instruction block to HTML
+                recipeHTML += `
+                    <div class="fade-in instruction-block mb-2" style="animation-delay: 0.5s;">
+                        <span class="font-medium text-gray-300 block text-center mb-2">Immersion Plan (${scenarioTitle}):</span>
+                        <ul class="text-gray-100">
+                           ${instructionListHTML}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            recipeOutputEl.innerHTML = recipeHTML;
+
+            // --- Handle "Done" Button State ---
+            if (currentRecipeCoffee) {
+                 currentRecipeDose = dose;
+                 doneBtn.classList.remove('hidden');
+                 doneBtn.disabled = false;
+            } else {
+                 doneBtn.classList.add('hidden');
+            }
         }
+
+        // --- Mark Recipe as Done Logic ---
+        function markRecipeDone() { /* ... (no changes) ... */
+               if (!currentRecipeCoffee || currentRecipeDose === null) { console.error("No valid recipe data."); return; }
+
+            const coffeeIndex = coffees.findIndex(c => c.name === currentRecipeCoffee.name);
+            if (coffeeIndex !== -1) {
+                const coffeeToUpdate = coffees[coffeeIndex];
+                const newWeight = Math.max(0, coffeeToUpdate.weight - currentRecipeDose);
+                coffeeToUpdate.weight = newWeight;
+                console.log(`Updated ${coffeeToUpdate.name} weight to ${newWeight}g.`);
+                saveCoffees();
+                renderCoffeeList();
+
+                const coffeeDisplay = recipeOutputEl.querySelector('div:first-child span:last-child');
+                if (coffeeDisplay) {
+                     coffeeDisplay.innerHTML = `${coffeeToUpdate.name} (<span class="text-yellow-400">${newWeight}g left - Updated!</span>)`;
+                }
+            } else {
+                console.error("Could not find the coffee to update:", currentRecipeCoffee.name);
+                alert("Error: Could not find the selected coffee to update its weight.");
+            }
+
+            doneBtn.disabled = true;
+            doneBtn.classList.add('hidden');
+            currentRecipeCoffee = null;
+            currentRecipeDose = null;
+        }
+
 
         // --- Event Listeners ---
         addCoffeeBtn.addEventListener('click', addCoffee);
-        // Allow adding coffee by pressing Enter in the input field
-        coffeeInput.addEventListener('keypress', function(event) {
-            if (event.key === 'Enter') {
-                addCoffee();
-            }
-        });
+        coffeeWeightInput.addEventListener('keypress', function(event) { if (event.key === 'Enter') { addCoffee(); } });
         randomizeBtn.addEventListener('click', generateRandomRecipe);
+        exportBtn.addEventListener('click', exportCoffees);
+        importBtn.addEventListener('click', () => importFileEl.click());
+        importFileEl.addEventListener('change', handleImport);
+        doneBtn.addEventListener('click', markRecipeDone);
+
 
         // --- Initial Load ---
         loadCoffees(); // Load coffees when the page loads
